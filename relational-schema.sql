@@ -6,31 +6,31 @@ CREATE TABLE User(
     firstname CHAR(20),
     lastname CHAR(20), 
     phone_number INT,
-    password CHAR(20),
+    Upassword CHAR(20),
     email CHAR(20),
     PRIMARY KEY(ID)
 );
 
 CREATE TABLE Customers(
-    ID CHAR(10) NOT NULL,
-    address CHAR(20),
+    CID CHAR(10) NOT NULL,
+    Caddress CHAR(20),
     creditcard_no CHAR(20),
-    PRIMARY KEY (ID),
-    FOREIGN KEY (ID) REFERENCES User
+    PRIMARY KEY (CID),
+    FOREIGN KEY (CID) REFERENCES User(ID)
 );
 
 CREATE TABLE Admins(
-    ID CHAR(10) NOT NULL,
+    AID CHAR(10) NOT NULL,
     ssn CHAR(20),
-    PRIMARY KEY (ID),
-    FOREIGN KEY (ID) REFERENCES User
+    PRIMARY KEY (AID),
+    FOREIGN KEY (AID) REFERENCES User(ID)
 );
 
 CREATE TABLE Deliverers(
-    ID CHAR(10) NOT NULL,
+    DID CHAR(10) NOT NULL,
     ssn CHAR(20),
-    PRIMARY KEY (ID),
-    FOREIGN KEY (ID) REFERENCES User
+    PRIMARY KEY (DID),
+    FOREIGN KEY (DID) REFERENCES User(ID)
 );
 
 -- Other Attributes
@@ -38,8 +38,8 @@ CREATE TABLE Deliverers(
 CREATE TABLE Discounts(
     discount_code CHAR(20) NOT NULL,
     discount_perc INT,
-    start_date DATE,
-    end_date DATE,
+    Sdate DATE,
+    Edate DATE,
     PRIMARY KEY (discount_code)
 );
 
@@ -54,11 +54,11 @@ CREATE TABLE Orders(
 
 CREATE TABLE Flower_arrangement(
     FID CHAR(10) NOT NULL,
-    name CHAR(20),
+    Fname CHAR(20),
     price INT,
     quantity INT,
-    type CHAR(20),
-    size CHAR(20),
+    Ftype CHAR(20),
+    Fsize CHAR(20),
     floral_description CHAR(20),
     PRIMARY KEY (FID)
 );
@@ -67,43 +67,44 @@ CREATE TABLE Flower_arrangement(
 -- Relation Tables
 
 CREATE TABLE enter(
-    ID CHAR(10) NOT NULL,
+    CID CHAR(10) NOT NULL,
     discount_code CHAR(20) NOT NULL,
-    PRIMARY KEY (ID, discount_code),
-    FOREIGN KEY (ID) REFERENCES Customers, -- Or User?
-    FOREIGN KEY (discount_code) REFERENCES Discounts
+    PRIMARY KEY (discount_code),
+    FOREIGN KEY (CID) REFERENCES Customers(CID),
+    FOREIGN KEY (discount_code) REFERENCES Discounts(discount_code)
 );
 
 
 CREATE TABLE contains(
     OrderID CHAR(10) NOT NULL,
     FID CHAR(10) NOT NULL,
-    PRIMARY KEY (OrderID, FID),
-    FOREIGN KEY (OrderID) REFERENCES Orders,
-    FOREIGN KEY (FID) REFERENCES Flower_arrangement
+    PRIMARY KEY (OrderID),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (FID) REFERENCES Flower_arrangement(FID)
 );
 
 
 CREATE TABLE deliver(
     OrderID CHAR(10) NOT NULL,
-    ID CHAR(10) NOT NULL,
-    PRIMARY KEY (OrderID, ID),
-    FOREIGN KEY (OrderID) REFERENCES Orders,
-    FOREIGN KEY (ID) REFERENCES Deliverers -- Or User?
+    DID CHAR(10) NOT NULL,
+    PRIMARY KEY (OrderID),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (DID) REFERENCES Deliverers(DID) -- Or User?
 );
 
 CREATE TABLE place(
     OrderID CHAR(10) NOT NULL,
-    ID CHAR(10) NOT NULL,
-    PRIMARY KEY (OrderID, ID),
-    FOREIGN KEY (OrderID) REFERENCES Orders,
-    FOREIGN KEY (ID) REFERENCES Customers -- Or User?
+    CID CHAR(10) NOT NULL,
+    PRIMARY KEY (OrderID),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (CID) REFERENCES Customers(CID) -- Or User?
 );
 
 CREATE TABLE updates(
     OrderID CHAR(10) NOT NULL,
-    ID CHAR(10) NOT NULL,
-    PRIMARY KEY (OrderID, ID),
-    FOREIGN KEY (OrderID) REFERENCES Orders,
-    FOREIGN KEY (ID) REFERENCES Admins -- Or User?
+    DID CHAR(10) NOT NULL,
+    Ustatus BOOLEAN,
+    PRIMARY KEY (OrderID, DID),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (DID) REFERENCES Deliverers(DID) -- Or User?
 );
