@@ -2,7 +2,7 @@
 
 -- User and its IS-A relationships
 CREATE TABLE User(
-   ID CHAR(10) NOT NULL,
+   ID CHAR(10) NOT NULL UNIQUE,
    firstname CHAR(20),
    lastname CHAR(20),
    phone_number INT,
