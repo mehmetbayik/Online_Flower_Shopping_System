@@ -6,6 +6,7 @@ class FlowerShopUI:
         self.conn = sqlite3.connect("project-stage2.db")
         self.cur = self.conn.cursor()
         self.logged_in_user = None
+        self.cart = []
 
     def welcome_window(self):
         layout = [
@@ -106,25 +107,51 @@ class FlowerShopUI:
 
 
     def view_flower_arrangements_window(self):
-        self.cur.execute("SELECT * FROM Flower_arrangement")
+        self.cur.execute("SELECT FID, Fname FROM Flower_arrangement")
         data = self.cur.fetchall()
         layout = [
             [sg.Text('Floral Arrangements')],
-            [sg.Table(values=data, headings=['FID', 'Fname', 'price', 'quantity', 'Ftype', 'Fsize', 'floral_description'],
-                      display_row_numbers=False, auto_size_columns=True, justification='left', key='-TABLE-',
-                      enable_events=True)]  # Etkinlikleri etkinleştirme
+            [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-', select_mode='multiple')],
+            [sg.Button('View Details'), sg.Button('Add to Cart'), sg.Button('Close')]  # "Add to Cart" butonunu ekle
         ]
         window = sg.Window('View Flower Arrangements', layout)
         while True:
             event, values = window.read()
-            if event == sg.WIN_CLOSED:
+            if event == sg.WIN_CLOSED or event == 'Close':
                 break
-            elif event == '-TABLE-':  # Tablodan bir satıra tıklandığında
-                selected_row = values['-TABLE-'][0]  # Seçilen satırın indeksi
-                selected_arrangement_id = data[selected_row][0]  # Seçilen düzenlemenin ID'si
-                self.edit_flower_arrangement_window(selected_arrangement_id)  # Seçilen düzenleme penceresini aç
+            elif event == 'View Details':
+                selected_arrangements = values['-ARRANGEMENTS-']
+                if selected_arrangements:
+                    arrangement_id = selected_arrangements[0][0]
+                    self.view_floral_arrangement_details(arrangement_id)
+            elif event == 'Add to Cart':  # "Add to Cart" butonunun seçimi için yeni bir şart ekleyin
+                selected_arrangements = values['-ARRANGEMENTS-']
+                if selected_arrangements:
+                    self.add_to_cart(selected_arrangements)
         window.close()
-        
+
+
+    def view_floral_arrangement_details(self, arrangement_id):
+        # Çiçek düzenlemesinin detaylarını veritabanından al
+        self.cur.execute("SELECT * FROM Flower_arrangement WHERE FID = ?", (arrangement_id,))
+        arrangement_details = self.cur.fetchone()
+    
+        # Detayları görüntülemek için bir pencere oluştur
+        layout = [
+            [sg.Text('Floral Arrangement Details')],
+            [sg.Text(f'ID: {arrangement_details[0]}')],
+            [sg.Text(f'Name: {arrangement_details[1]}')],
+            [sg.Text(f'Price: {arrangement_details[2]}')],
+            [sg.Text(f'Quantity: {arrangement_details[3]}')],
+            [sg.Text(f'Type: {arrangement_details[4]}')],
+            [sg.Text(f'Size: {arrangement_details[5]}')],
+            [sg.Text(f'Design: {arrangement_details[6]}')],
+            [sg.Button('Close')]
+        ]
+        window = sg.Window('Floral Arrangement Details', layout)
+        event, values = window.read()
+        window.close()
+
         
     def edit_flower_arrangement_window(self, arrangement_id):
         # Seçilen düzenleme için bilgileri veritabanından al
@@ -168,7 +195,6 @@ class FlowerShopUI:
         layout = [
             [sg.Text('Customer Menu')],
             [sg.Button('View Flower Arrangements')],
-            [sg.Button('Add to Cart')],
             [sg.Button('View Cart')],
             [sg.Button('Logout')]
         ]
@@ -179,7 +205,14 @@ class FlowerShopUI:
                 break
             elif event == 'View Flower Arrangements':
                 self.view_flower_arrangements_window()
+            elif event == 'Add to Cart':
+                selected_arrangements = values['-ARRANGEMENTS-']
+                if selected_arrangements:
+                    self.add_to_cart(selected_arrangements)
+            elif event == 'View Cart':
+                self.view_cart()  # View Cart butonuna basıldığında view_cart fonksiyonunu çağır
         window.close()
+
         
     def deliverer_login_window(self):
         layout = [
@@ -329,6 +362,24 @@ class FlowerShopUI:
     
         # Pencereyi görüntüle ve kullanıcının "Close" düğmesine tıklamasını bekleyin
         event, values = window.read()
+        window.close()
+
+    def add_to_cart(self, arrangement_ids):
+        for arrangement_id in arrangement_ids:
+            self.cart.append(arrangement_id)
+        sg.popup('Selected arrangements added to cart successfully!')
+
+    def view_cart(self):
+        layout = [
+            [sg.Text('Your Cart')],
+            [sg.Listbox(values=self.cart, size=(30, 6), key='-CART-')],
+            [sg.Button('Close')]
+        ]
+        window = sg.Window('View Cart', layout)
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Close':
+                break
         window.close()
 
 
