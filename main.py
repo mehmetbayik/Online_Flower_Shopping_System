@@ -111,24 +111,49 @@ class FlowerShopUI:
         layout = [
             [sg.Text('Floral Arrangements')],
             [sg.Table(values=data, headings=['FID', 'Fname', 'price', 'quantity', 'Ftype', 'Fsize', 'floral_description'],
-                      display_row_numbers=False, auto_size_columns=True, justification='left', key='-TABLE-')],
-            [sg.Button('Close')]
+                      display_row_numbers=False, auto_size_columns=True, justification='left', key='-TABLE-',
+                      enable_events=True)]  # Etkinlikleri etkinleştirme
         ]
         window = sg.Window('View Flower Arrangements', layout)
         while True:
             event, values = window.read()
-            if event == sg.WIN_CLOSED or event == 'Close':
+            if event == sg.WIN_CLOSED:
                 break
+            elif event == '-TABLE-':  # Tablodan bir satıra tıklandığında
+                selected_row = values['-TABLE-'][0]  # Seçilen satırın indeksi
+                selected_arrangement_id = data[selected_row][0]  # Seçilen düzenlemenin ID'si
+                self.edit_flower_arrangement_window(selected_arrangement_id)  # Seçilen düzenleme penceresini aç
         window.close()
-
+        
+        
     def edit_flower_arrangement_window(self, arrangement_id):
+        # Seçilen düzenleme için bilgileri veritabanından al
+        self.cur.execute("SELECT * FROM Flower_arrangement WHERE FID = ?", (arrangement_id,))
+        arrangement_data = self.cur.fetchone()
         layout = [
             [sg.Text('Edit Flower Arrangement')],
-            [sg.Text('ID:'), sg.InputText(key='-ID-', default_text=arrangement_id, disabled=True)],
-            # Include input fields for other attributes
+            [sg.Text('ID:'), sg.InputText(key='-ID-', default_text=arrangement_data[0], disabled=True)],
+            [sg.Text('Size:'), sg.InputText(key='-SIZE-', default_text=arrangement_data[5])],
+            [sg.Text('Type:'), sg.InputText(key='-TYPE-', default_text=arrangement_data[4])],
+            [sg.Text('Quantity:'), sg.InputText(key='-QUANTITY-', default_text=arrangement_data[3])],
+            [sg.Text('Price:'), sg.InputText(key='-PRICE-', default_text=arrangement_data[2])],
+            [sg.Text('Name:'), sg.InputText(key='-NAME-', default_text=arrangement_data[1])],
+            [sg.Text('Design:'), sg.InputText(key='-DESIGN-', default_text=arrangement_data[6])],
             [sg.Button('Save'), sg.Button('Cancel')]
         ]
-        return sg.Window('Edit Flower Arrangement', layout)
+        window = sg.Window('Edit Flower Arrangement', layout)
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Cancel':
+                break
+            elif event == 'Save':
+                # Değişiklikleri veritabanına kaydet
+                self.cur.execute("UPDATE Flower_arrangement SET Fsize=?, Ftype=?, quantity=?, price=?, Fname=?, floral_description=? WHERE FID=?",
+                                 (values['-SIZE-'], values['-TYPE-'], values['-QUANTITY-'], values['-PRICE-'], values['-NAME-'], values['-DESIGN-'], arrangement_id))
+                self.conn.commit()  # Veritabanını güncelle
+                sg.popup('Flower Arrangement updated successfully!')
+                break
+        window.close()
 
     def customer_login_window(self):
         layout = [
