@@ -111,9 +111,12 @@ class FlowerShopUI:
         data = self.cur.fetchall()
         layout = [
             [sg.Text('Floral Arrangements')],
-            [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-', select_mode='multiple')],
-            [sg.Button('View Details'), sg.Button('Add to Cart'), sg.Button('Close')]  # "Add to Cart" butonunu ekle
+            [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-')],
+            [sg.Button('View Details'), sg.Button('Close')]
         ]
+        # Giriş yapılan kullanıcının türüne göre Add to Cart butonunu ekleyelim
+        if self.logged_in_user == 'customer':
+            layout[1].insert(-1, sg.Button('Add to Cart'))
         window = sg.Window('View Flower Arrangements', layout)
         while True:
             event, values = window.read()
@@ -124,11 +127,12 @@ class FlowerShopUI:
                 if selected_arrangements:
                     arrangement_id = selected_arrangements[0][0]
                     self.view_floral_arrangement_details(arrangement_id)
-            elif event == 'Add to Cart':  # "Add to Cart" butonunun seçimi için yeni bir şart ekleyin
+            elif event == 'Add to Cart' and self.logged_in_user == 'customer':  # Sadece müşteri kullanıcılar için Add to Cart işlevselliğini kontrol edelim
                 selected_arrangements = values['-ARRANGEMENTS-']
                 if selected_arrangements:
                     self.add_to_cart(selected_arrangements)
         window.close()
+
 
 
     def view_floral_arrangement_details(self, arrangement_id):
@@ -385,3 +389,4 @@ class FlowerShopUI:
 
 app = FlowerShopUI()
 app.run()
+
