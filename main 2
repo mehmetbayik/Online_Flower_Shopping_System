@@ -37,7 +37,7 @@ class FlowerShopUI:
             [sg.Button('View Flower Arrangements')],
             [sg.Button('Define Discounts')],
             [sg.Button('View Discounts')],
-            [sg.Button('View Orders')],  # "View Orders" butonunu ekleyin
+            [sg.Button('View Orders')],
             [sg.Button('Logout')]
         ]
         window = sg.Window('Admin Menu', layout)
@@ -48,22 +48,32 @@ class FlowerShopUI:
             elif event == 'View Flower Arrangements':
                 self.view_flower_arrangements_window()
             elif event == 'Add Flower Arrangement':
-                self.add_flower_arrangement_window().read(close=True)
+                self.add_flower_arrangement_window()
             elif event == 'Delete Flower Arrangement':
-                self.delete_flower_arrangement_window().read(close=True)
+                self.delete_flower_arrangement_window()
             elif event == 'Define Discounts':
                 self.define_discounts_window()
             elif event == 'View Discounts':
                 self.view_discounts_window()
-            elif event == 'View Orders':  # "View Orders" butonuna tıklandığında
-                self.view_orders_window()  # view_orders_window() fonksiyonunu çağırıyoruz
+            elif event == 'View Orders':
+                self.view_orders_window()
         window.close()
 
 
+
     def add_flower_arrangement_window(self):
+        # En son kullanılan ID'yi bul ve yeni ID'yi hesapla
+        self.cur.execute("SELECT FID FROM Flower_arrangement ORDER BY FID DESC LIMIT 1")
+        last_id = self.cur.fetchone()
+        if last_id:
+            next_id_number = int(last_id[0][3:]) + 1
+            new_id = f'FID{next_id_number:03d}'
+        else:
+            new_id = 'FID001'
+    
         layout = [
             [sg.Text('Add Flower Arrangement')],
-            [sg.Text('ID:'), sg.InputText(key='-ID-')],
+            [sg.Text('ID:'), sg.Text(new_id)],
             [sg.Text('Size:'), sg.InputText(key='-SIZE-')],
             [sg.Text('Type:'), sg.InputText(key='-TYPE-')],
             [sg.Text('Quantity:'), sg.InputText(key='-QUANTITY-')],
@@ -72,29 +82,27 @@ class FlowerShopUI:
             [sg.Text('Design:'), sg.InputText(key='-DESIGN-')],
             [sg.Button('Add'), sg.Button('Cancel')]
         ]
+    
         window = sg.Window('Add Flower Arrangement', layout)
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
             elif event == 'Add':
-                # Girilen bilgileri al
-                arrangement_id = values['-ID-']
                 size = values['-SIZE-']
                 type_ = values['-TYPE-']
                 quantity = values['-QUANTITY-']
                 price = values['-PRICE-']
                 name = values['-NAME-']
                 design = values['-DESIGN-']
-                
-                # Veritabanına ekleme işlemi
+    
                 self.cur.execute("INSERT INTO Flower_arrangement (FID, Fsize, Ftype, quantity, price, Fname, floral_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                 (arrangement_id, size, type_, quantity, price, name, design))
+                                 (new_id, size, type_, quantity, price, name, design))
                 self.conn.commit()
                 sg.popup('Flower Arrangement added successfully!')
-                break
         window.close()
-        return window
+
+
 
     def delete_flower_arrangement_window(self):
         layout = [
@@ -169,17 +177,6 @@ class FlowerShopUI:
             except Exception as e:
                 sg.popup(f'An error occurred: {e}')
 
-    # def add_to_cart(self, arrangement_ids):
-    #     for arrangement_id in arrangement_ids:
-    #         self.cur.execute("SELECT price FROM Flower_arrangement WHERE FID = ?", (arrangement_id,))
-    #         price_row = self.cur.fetchone()
-    #         if price_row:
-    #             price = price_row[0]
-    #             gift_note = sg.popup_get_text('Enter a gift note:')
-    #             self.cart.append((arrangement_id, price, price, gift_note))
-    #             sg.popup('Flower arrangement added to cart!')
-    #         else:
-    #             sg.popup('Price not found for arrangement ID:', arrangement_id)
 
     
     def view_floral_arrangement_details(self, arrangement_id):
