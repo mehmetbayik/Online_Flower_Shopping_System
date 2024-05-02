@@ -90,17 +90,24 @@ class FlowerShopUI:
             if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
             elif event == 'Add':
-                size = values['-SIZE-']
-                type_ = values['-TYPE-']
-                quantity = values['-QUANTITY-']
-                price = values['-PRICE-']
-                name = values['-NAME-']
-                design = values['-DESIGN-']
-    
-                self.cur.execute("INSERT INTO Flower_arrangement (FID, Fsize, Ftype, quantity, price, Fname, floral_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                 (new_id, size, type_, quantity, price, name, design))
-                self.conn.commit()
-                sg.popup('Flower Arrangement added successfully!')
+                try:
+                    qt_int_err = int(values['-QUANTITY-'])
+                    price_int_err = int(values['-PRICE-'])
+                    size = values['-SIZE-']
+                    type_ = values['-TYPE-']
+                    quantity = values['-QUANTITY-']
+                    price = values['-PRICE-']
+                    name = values['-NAME-']
+                    design = values['-DESIGN-']
+        
+                    self.cur.execute("INSERT INTO Flower_arrangement (FID, Fsize, Ftype, quantity, price, Fname, floral_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                    (new_id, size, type_, quantity, price, name, design))
+                    self.conn.commit()
+                    sg.popup('Flower Arrangement added successfully!')
+                    break
+                except:
+                    sg.popup('Invalid value/s! (Quantity and price should be integer)')
+                    break
         window.close()
 
 
@@ -249,12 +256,20 @@ class FlowerShopUI:
             if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
             elif event == 'Save':
-                # Değişiklikleri veritabanına kaydet
-                self.cur.execute("UPDATE Flower_arrangement SET Fsize=?, Ftype=?, quantity=?, price=?, Fname=?, floral_description=? WHERE FID=?",
-                                 (values['-SIZE-'], values['-TYPE-'], values['-QUANTITY-'], values['-PRICE-'], values['-NAME-'], values['-DESIGN-'], arrangement_id))
-                self.conn.commit()  # Veritabanını güncelle
-                sg.popup('Flower Arrangement updated successfully!')
-                break
+                try:
+                    qt_int_err = int(values['-QUANTITY-'])
+                    price_int_err = int(values['-PRICE-'])
+                    # Değişiklikleri veritabanına kaydet
+                    print(type(values['-QUANTITY-']))
+                    self.cur.execute("UPDATE Flower_arrangement SET Fsize=?, Ftype=?, quantity=?, price=?, Fname=?, floral_description=? WHERE FID=?",
+                                    (values['-SIZE-'], values['-TYPE-'], values['-QUANTITY-'], values['-PRICE-'], values['-NAME-'], values['-DESIGN-'], arrangement_id))
+                    self.conn.commit()  # Veritabanını güncelle
+                    sg.popup('Flower Arrangement updated successfully!')
+                    break
+                except:
+                    sg.popup('Invalid value/s! (Quantity and price should be integer)')
+                    break
+
         window.close()
 
 
