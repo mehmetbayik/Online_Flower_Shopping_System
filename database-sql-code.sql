@@ -75,9 +75,9 @@ CREATE TABLE Discount(
 -- Relation Tables
 
 CREATE TABLE enters(
-   CID INT NOT NULL UNIQUE,
-   discount_code CHAR(20) NOT NULL UNIQUE,
-   PRIMARY KEY (discount_code),
+   CID INT NOT NULL,
+   discount_code CHAR(20) NOT NULL,
+   PRIMARY KEY (CID,discount_code),
    FOREIGN KEY (CID) REFERENCES Customer(CID),
    FOREIGN KEY (discount_code) REFERENCES Discount(discount_code)
 );
@@ -109,7 +109,11 @@ VALUES
 (12, 'Sophia', 'Harris', 3334445555, 'sophiapass', 'sophia@example.com'),
 (13, 'Noah', 'Clark', 2223334444, 'noahpass', 'noah@example.com'),
 (14, 'Isabella', 'Lewis', 9990001111, 'isabellapass', 'isabella@example.com'),
-(15, 'Liam', 'Rodriguez', 1112223333, 'liampass', 'liam@example.com');
+(15, 'Liam', 'Rodriguez', 1112223333, 'liampass', 'liam@example.com'),
+(16, 'Admin', 'Admin', 0000000000, '123', 'customer'),
+(17, 'Admin', 'Admin', 0000000001, '123', 'admin'),
+(18, 'Admin', 'Admin', 0000000002, '123', 'deliverer');
+
 
 INSERT INTO Customer (CID, Caddress, creditcard_no)
 VALUES 
@@ -117,7 +121,9 @@ VALUES
 (2, '456 Elm St', 9876543210987654),
 (3, '789 Oak St', 5555666677778888),
 (4, '101 Pine St', 1234123412341234),
-(5, '202 Maple St', 9876987698769876);
+(5, '202 Maple St', 9876987698769876),
+(16, 'admin', 0000000000000000);
+
 
 INSERT INTO Admin (AID, ssn)
 VALUES 
@@ -125,7 +131,8 @@ VALUES
 (7, 987654321),
 (8, 555566667),
 (9, 111122223),
-(10, 999888887);
+(10, 999888887),
+(17, 000000000);
 
 INSERT INTO Deliverer (DID, ssn)
 VALUES 
@@ -133,7 +140,9 @@ VALUES
 (12, 123456789),
 (13, 555566667),
 (14, 111122223),
-(15, 999988887);
+(15, 999988887),
+(18, 000000001);
+
 
 INSERT INTO Flower_arrangement (FID, Fname, price, quantity, Ftype, Fsize, floral_description)
 VALUES 
