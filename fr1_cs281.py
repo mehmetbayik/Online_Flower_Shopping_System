@@ -93,6 +93,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Add':
                 try:
@@ -127,6 +128,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Delete':
                 # Girilen ID'ye sahip çiçek düzenlemesini veritabanından sil
@@ -186,7 +188,7 @@ class FlowerShopUI:
                      fid = arrangement[0]  # assuming FID is the first element in the tuple
                      self.prepared_arrangements.append((self.logged_in_user, fid))
                 sg.popup('Arrangements prepared and visible to admins')
-                break
+                
             else:
                 sg.popup('No arrangements selected.')
 
@@ -274,6 +276,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Save':
                 # Değişiklikleri veritabanına kaydet
@@ -355,19 +358,20 @@ class FlowerShopUI:
             SELECT o.OrderID, o.order_date, o.delivery_date, o.paid_price, u.Ustatus
             FROM Orders o
             JOIN Updates u ON o.OrderID = u.OrderID
-            WHERE o.Delivering_ID = ?
+            WHERE u.DID = ? 
         """, (self.logged_in_user,))
-        assigned_orders_data = self.cur.fetchall()  # Get all results
+        assigned_orders_data = self.cur.fetchall()
     
-        # Check if there is data to display
         if not assigned_orders_data:
             sg.popup('No assigned orders found.')
             return
     
-        # Define the layout with the table
+        # Convert status from boolean to human-readable form
+        display_data = [(order_id, order_date, delivery_date, paid_price, 'Completed' if status else 'Incomplete') for order_id, order_date, delivery_date, paid_price, status in assigned_orders_data]
+    
         layout = [
             [sg.Text('Assigned Orders')],
-            [sg.Table(values=assigned_orders_data, headings=['Order ID', 'Order Date', 'Delivery Date', 'Status'], key='-ORDERS-', enable_events=True)],
+            [sg.Table(values=display_data, headings=['Order ID', 'Order Date', 'Delivery Date', 'Paid Price', 'Status'], key='-ORDERS-', enable_events=True)],
             [sg.Button('Edit'), sg.Button('Close')]
         ]
         window = sg.Window('View Assigned Orders', layout)
@@ -375,53 +379,31 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
-                window.close()
                 break
             elif event == 'Edit':
-                if values['-ORDERS-']:  # Check if any rows are selected
-                    try:
-                        selected_order = values['-ORDERS-'][0]  # Get the first (and only) selected row index
-                        # Continue processing the selected order
-                    except IndexError:
-                        sg.popup('No order selected. Please select an order to edit.')
+                if values['-ORDERS-']:  # Ensure a row is selected
+                    selected_order_index = values['-ORDERS-'][0]
+                    selected_order = assigned_orders_data[selected_order_index]
+                    self.edit_order_status(selected_order)
                 else:
-                    sg.popup('No order selected. Please select an order to edit.')
-    
+                    sg.popup('Please select an order to edit.')
         window.close()
-
-
-
     
-    def edit_order_status(self, order_id):
-        # Fetch current status
-        self.cur.execute("SELECT Ustatus FROM updates WHERE OrderID=?", (order_id,))
-        current_status = self.cur.fetchone()[0]
-        new_status = not current_status  # Toggle status
-        # Update the status in the database
-        self.cur.execute("UPDATE updates SET Ustatus=? WHERE OrderID=?", (new_status, order_id))
+    def edit_order_status(self, selected_order):
+        order_id, _, _, _, current_status = selected_order
+    
+        new_delivery_date = sg.popup_get_text('Enter new delivery date (YYYY-MM-DD):')
+        new_status = sg.popup_get_text('Enter new status (Completed/Incomplete):')
+    
+        new_status_bool = True if new_status.lower() == 'completed' else False
+    
+        self.cur.execute("UPDATE Orders SET delivery_date = ? WHERE OrderID = ?", (new_delivery_date, order_id))
+        self.cur.execute("UPDATE Updates SET Ustatus = ? WHERE OrderID = ?", (new_status_bool, order_id))
         self.conn.commit()
-        sg.popup('Status updated successfully!')
-            
-    def run(self):
-        while True:
-            window = self.welcome_window()
-            event, values = window.read()
-            if event == sg.WIN_CLOSED or event == 'Exit':
-                break
-            elif event == 'Admin Login':
-                window.close()
-                self.logged_in_user = 'admin'
-                self.admin_login()
-            elif event == 'Customer Login':
-                window.close()
-                self.logged_in_user = 'customer'
-                self.customer_login()
-            elif event == 'Deliverer Login':
-                window.close()
-                self.logged_in_user = 'deliverer'
-                self.deliverer_login()
-        window.close()
-        self.conn.close()  # Close the database connection when the application exits
+        sg.popup('Order and status updated successfully!')
+
+
+
 
 
     def admin_login(self):
@@ -430,6 +412,7 @@ class FlowerShopUI:
             event, values = window.read()
             window.close()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Login':
                 username = values['-USERNAME-']
@@ -457,6 +440,7 @@ class FlowerShopUI:
             event, values = window.read()
             window.close()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Login':
                 username = values['-USERNAME-']
@@ -465,7 +449,8 @@ class FlowerShopUI:
                 if user_id:
                     self.logged_in_user = 'customer'
                     self.user_id = user_id  # Kullanıcı ID'sini saklayın
-                    self.customer_main_menu().read(close=True)
+                    #self.customer_main_menu().read(close=True)
+                    self.customer_main_menu()
                     break
                 else:
                     sg.popup('Invalid username or password.')
@@ -490,6 +475,7 @@ class FlowerShopUI:
             event, values = window.read()
             window.close()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Login':
                 username = values['-USERNAME-']
@@ -609,11 +595,12 @@ class FlowerShopUI:
                 if values['-TABLE-']:  # Check if any row is selected
                     selected_row_index = values['-TABLE-'][0]  # Get the first (and only) selection
                     did = filtered_pairs[selected_row_index][0]  # DID is the first element in the tuple
-                    # Assuming you have a current_order_id attribute to store the order ID of the selected order
-                    self.cur.execute("UPDATE updates SET DID=?, Ustatus=? WHERE OrderID=?", (did, True, self.current_order_id))
+                    # Inserting into updates table
+                    self.cur.execute("INSERT INTO updates (OrderID, DID, Ustatus) VALUES (?, ?, ?)", (self.current_order_id, did, False))
                     self.conn.commit()
                     sg.popup('Order assigned successfully!')
         window.close()
+
 
 
 
@@ -630,6 +617,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Save':
                 discount_code = values['-DISCOUNT_CODE-']
@@ -643,13 +631,18 @@ class FlowerShopUI:
                 if count > 0:
                     sg.popup("Discount code already exists. Please choose a different code.")
                 else:
-                    # Yeni indirimi veritabanına ekle
-                    Entering_ID = self.logged_in_user
-                    self.cur.execute("INSERT INTO Discount (discount_code, Entering_ID, Sdate, Edate, discount_perc) VALUES (?, ?, ?, ?, ?)",
-                                     (discount_code, Entering_ID, start_date, end_date, discount_percentage))
-                    self.conn.commit()
-                    sg.popup('Discount defined successfully!')
-                    break
+                    try:
+                        int_disc_perc = int(discount_percentage)
+                        # Yeni indirimi veritabanına ekle
+                        Entering_ID = self.logged_in_user
+                        self.cur.execute("INSERT INTO Discount (discount_code, Entering_ID, Sdate, Edate, discount_perc) VALUES (?, ?, ?, ?, ?)",
+                                        (discount_code, Entering_ID, start_date, end_date, discount_percentage))
+                        self.conn.commit()
+                        sg.popup('Discount defined successfully!')
+                        break
+                    except:
+                        sg.popup('Discount percentage should be integer!')
+                        break
         window.close()
 
     
@@ -765,6 +758,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Cancel':
+                window.close()
                 break
             elif event == 'Apply Discount':
                 if values['-TABLE-']:  # Seçim yapılmışsa
@@ -986,8 +980,27 @@ class FlowerShopUI:
         self.conn.commit()
         sg.popup('Delivery ID updated successfully!')
 
-# END OF FUNCTIONAL REQ 2
 
+    def run(self):
+        while True:
+            window = self.welcome_window()
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Exit':
+                break
+            elif event == 'Admin Login':
+                window.close()
+                self.logged_in_user = 'admin'
+                self.admin_login()
+            elif event == 'Customer Login':
+                window.close()
+                self.logged_in_user = 'customer'
+                self.customer_login()
+            elif event == 'Deliverer Login':
+                window.close()
+                self.logged_in_user = 'deliverer'
+                self.deliverer_login()
+        window.close()
+        self.conn.close()  # Close the database connection when the application exits
 
 
 app = FlowerShopUI()
