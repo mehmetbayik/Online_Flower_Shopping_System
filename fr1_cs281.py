@@ -229,11 +229,11 @@ class FlowerShopUI:
         layout = [
             [sg.Text('Floral Arrangement Details')],
             [sg.Text(f'ID: {arrangement_details[0]}')],
-            [sg.Text(f'Name: {arrangement_details[5]}')],  # Sütun indislerini kontrol edelim
-            [sg.Text(f'Price: {arrangement_details[4]}')],
+            [sg.Text(f'Size: {arrangement_details[5]}')],
+            [sg.Text(f'Type: {arrangement_details[4]}')],
             [sg.Text(f'Quantity: {arrangement_details[3]}')],
-            [sg.Text(f'Type: {arrangement_details[2]}')],
-            [sg.Text(f'Size: {arrangement_details[1]}')],
+            [sg.Text(f'Price: {arrangement_details[2]}')],
+            [sg.Text(f'Name: {arrangement_details[1]}')],
             [sg.Text(f'Design: {arrangement_details[6]}')],
             [sg.Button('Edit'), sg.Button('Close')]
         ]
