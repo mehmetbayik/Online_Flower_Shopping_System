@@ -168,6 +168,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'View Details':
                 selected_arrangements = values['-ARRANGEMENTS-']
@@ -241,6 +242,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Edit':
                 self.edit_flower_arrangement_window(arrangement_id)
@@ -373,6 +375,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Edit':
                 if values['-ORDERS-']:  # Check if any rows are selected
@@ -577,6 +580,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Assign Order':
                 if values['-ORDERS-']:  # Ensure a row is selected
@@ -599,6 +603,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Assign':
                 if values['-TABLE-']:  # Check if any row is selected
@@ -659,6 +664,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Order':
                 self.place_order()
@@ -714,6 +720,7 @@ class FlowerShopUI:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Close':
+                window.close()
                 break
             elif event == 'Select Discount':
                 selected_discount = values['-DISCOUNTS-']
