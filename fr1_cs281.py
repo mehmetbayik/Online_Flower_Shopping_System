@@ -2,13 +2,18 @@ import sqlite3
 from datetime import datetime
 import PySimpleGUI as sg
 
+
+
 class FlowerShopUI:
     def __init__(self):
         self.conn = sqlite3.connect("project-stage2.db")
         self.cur = self.conn.cursor()
         self.logged_in_user = None
+        self.user_id = None
         self.cart = []
         self.discounts = []
+        self.prepared_arrangements = []
+        self.selected_discount = None
 
 
     def welcome_window(self):
@@ -31,34 +36,34 @@ class FlowerShopUI:
         return sg.Window('Admin Login', layout)
 
     def admin_main_menu(self):
-        layout = [
-            [sg.Text('Admin Menu')],
-            [sg.Button('Add Flower Arrangement')],
-            [sg.Button('Delete Flower Arrangement')],
-            [sg.Button('View Flower Arrangements')],
-            [sg.Button('Define Discounts')],
-            [sg.Button('View Discounts')],
-            [sg.Button('View Orders')],
-            [sg.Button('Logout')]
-        ]
-        window = sg.Window('Admin Menu', layout)
-        while True:
-            event, values = window.read()
-            if event == sg.WIN_CLOSED or event == 'Logout':
-                break
-            elif event == 'View Flower Arrangements':
-                self.view_flower_arrangements_window()
-            elif event == 'Add Flower Arrangement':
-                self.add_flower_arrangement_window()
-            elif event == 'Delete Flower Arrangement':
-                self.delete_flower_arrangement_window()
-            elif event == 'Define Discounts':
-                self.define_discounts_window()
-            elif event == 'View Discounts':
-                self.view_discounts_window()
-            elif event == 'View Orders':
-                self.view_orders_window()
-        window.close()
+            layout = [
+                [sg.Text('Admin Menu')],
+                [sg.Button('Add Flower Arrangement')],
+                [sg.Button('Delete Flower Arrangement')],
+                [sg.Button('View Flower Arrangements')],
+                [sg.Button('Define Discounts')],
+                [sg.Button('View Discounts')],
+                [sg.Button('View Orders')],
+                [sg.Button('Logout')]
+            ]
+            window = sg.Window('Admin Menu', layout)
+            while True:
+                event, values = window.read()
+                if event == sg.WIN_CLOSED or event == 'Logout':
+                    break
+                elif event == 'View Flower Arrangements':
+                    self.view_flower_arrangements_window()
+                elif event == 'Add Flower Arrangement':
+                    self.add_flower_arrangement_window()
+                elif event == 'Delete Flower Arrangement':
+                    self.delete_flower_arrangement_window()
+                elif event == 'Define Discounts':
+                    self.define_discounts_window()
+                elif event == 'View Discounts':
+                    self.view_discounts_window()
+                elif event == 'View Orders':
+                    self.view_orders_window()
+            window.close()
 
 
 
@@ -90,24 +95,17 @@ class FlowerShopUI:
             if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
             elif event == 'Add':
-                try:
-                    qt_int_err = int(values['-QUANTITY-'])
-                    price_int_err = int(values['-PRICE-'])
-                    size = values['-SIZE-']
-                    type_ = values['-TYPE-']
-                    quantity = values['-QUANTITY-']
-                    price = values['-PRICE-']
-                    name = values['-NAME-']
-                    design = values['-DESIGN-']
-        
-                    self.cur.execute("INSERT INTO Flower_arrangement (FID, Fsize, Ftype, quantity, price, Fname, floral_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                    (new_id, size, type_, quantity, price, name, design))
-                    self.conn.commit()
-                    sg.popup('Flower Arrangement added successfully!')
-                    break
-                except:
-                    sg.popup('Invalid value/s! (Quantity and price should be integer)')
-                    break
+                size = values['-SIZE-']
+                type_ = values['-TYPE-']
+                quantity = values['-QUANTITY-']
+                price = values['-PRICE-']
+                name = values['-NAME-']
+                design = values['-DESIGN-']
+    
+                self.cur.execute("INSERT INTO Flower_arrangement (FID, Fsize, Ftype, quantity, price, Fname, floral_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                 (new_id, size, type_, quantity, price, name, design))
+                self.conn.commit()
+                sg.popup('Flower Arrangement added successfully!')
         window.close()
 
 
@@ -137,6 +135,7 @@ class FlowerShopUI:
     def view_flower_arrangements_window(self):
         self.cur.execute("SELECT FID, Fname FROM Flower_arrangement")
         data = self.cur.fetchall()
+
     
         if self.logged_in_user == "customer":
             layout = [
@@ -144,12 +143,18 @@ class FlowerShopUI:
                 [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-', select_mode='multiple')],
                 [sg.Button('View Details'), sg.Button('Add to Cart'), sg.Button('Close')]
             ]
-        else:
+        elif self.logged_in_user == "admin":
             layout = [
                 [sg.Text('Floral Arrangements')],
                 [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-', select_mode='multiple')],
                 [sg.Button('View Details'), sg.Button('Close')]  # Remove 'Add to Cart' for non-customers
             ]
+        else:
+            layout = [
+             [sg.Text('Available Floral Arrangements')],
+             [sg.Listbox(values=data, size=(30, 6), key='-ARRANGEMENTS-', select_mode='multiple')],
+             [sg.Button('Prepare'), sg.Button('Close'), sg.Button('View Details')]
+         ]
     
         window = sg.Window('View Flower Arrangements', layout)
         
@@ -167,9 +172,15 @@ class FlowerShopUI:
                 if selected_arrangements:
                     arrangement_ids = [arrangement[0] for arrangement in selected_arrangements]
                     self.add_to_cart(arrangement_ids)
-                else:
-                    sg.popup('No arrangements selected.')
-        window.close()
+            elif event == 'Prepare':
+                selected_arrangements = values['-ARRANGEMENTS-']
+                for arrangement in selected_arrangements:
+                     fid = arrangement[0]  # assuming FID is the first element in the tuple
+                     self.prepared_arrangements.append((self.logged_in_user, fid))
+                sg.popup('Arrangements prepared and visible to admins')
+                break
+            else:
+                sg.popup('No arrangements selected.')
 
 
 
@@ -211,11 +222,11 @@ class FlowerShopUI:
         layout = [
             [sg.Text('Floral Arrangement Details')],
             [sg.Text(f'ID: {arrangement_details[0]}')],
-            [sg.Text(f'Size: {arrangement_details[5]}')],
-            [sg.Text(f'Type: {arrangement_details[4]}')],
+            [sg.Text(f'Name: {arrangement_details[5]}')],  # Sütun indislerini kontrol edelim
+            [sg.Text(f'Price: {arrangement_details[4]}')],
             [sg.Text(f'Quantity: {arrangement_details[3]}')],
-            [sg.Text(f'Price: {arrangement_details[2]}')],
-            [sg.Text(f'Name: {arrangement_details[1]}')],
+            [sg.Text(f'Type: {arrangement_details[2]}')],
+            [sg.Text(f'Size: {arrangement_details[1]}')],
             [sg.Text(f'Design: {arrangement_details[6]}')],
             [sg.Button('Edit'), sg.Button('Close')]
         ]
@@ -256,20 +267,12 @@ class FlowerShopUI:
             if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
             elif event == 'Save':
-                try:
-                    qt_int_err = int(values['-QUANTITY-'])
-                    price_int_err = int(values['-PRICE-'])
-                    # Değişiklikleri veritabanına kaydet
-                    print(type(values['-QUANTITY-']))
-                    self.cur.execute("UPDATE Flower_arrangement SET Fsize=?, Ftype=?, quantity=?, price=?, Fname=?, floral_description=? WHERE FID=?",
-                                    (values['-SIZE-'], values['-TYPE-'], values['-QUANTITY-'], values['-PRICE-'], values['-NAME-'], values['-DESIGN-'], arrangement_id))
-                    self.conn.commit()  # Veritabanını güncelle
-                    sg.popup('Flower Arrangement updated successfully!')
-                    break
-                except:
-                    sg.popup('Invalid value/s! (Quantity and price should be integer)')
-                    break
-
+                # Değişiklikleri veritabanına kaydet
+                self.cur.execute("UPDATE Flower_arrangement SET Fsize=?, Ftype=?, quantity=?, price=?, Fname=?, floral_description=? WHERE FID=?",
+                                 (values['-SIZE-'], values['-TYPE-'], values['-QUANTITY-'], values['-PRICE-'], values['-NAME-'], values['-DESIGN-'], arrangement_id))
+                self.conn.commit()  # Veritabanını güncelle
+                sg.popup('Flower Arrangement updated successfully!')
+                break
         window.close()
 
 
@@ -317,12 +320,13 @@ class FlowerShopUI:
             [sg.Button('Login'), sg.Button('Cancel')]
         ]
         return sg.Window('Deliverer Login', layout)
-
+    
+    
     def deliverer_main_menu(self):
         layout = [
             [sg.Text('Deliverer Menu')],
-            [sg.Button('View Orders')],
-            [sg.Button('Update Delivery Status')],
+            [sg.Button('See Floral Arrangements')],
+            [sg.Button('Waiting Orders')],
             [sg.Button('Logout')]
         ]
         window = sg.Window('Deliverer Menu', layout)
@@ -330,14 +334,64 @@ class FlowerShopUI:
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == 'Logout':
                 break
-            elif event == 'View Orders':
-                self.view_deliverer_orders()  # Deliverer için siparişleri görüntüleme fonksiyonu
-            elif event == 'Update Delivery Status':
-                self.update_delivery_status_window()  # Teslimat durumunu güncelleme fonksiyonu
+            elif event == 'See Floral Arrangements':
+                self.view_flower_arrangements_window()
+            elif event == 'Waiting Orders':
+                self.view_assigned_orders()
         window.close()
+
+    def view_assigned_orders(self):
+        # Fetch assigned orders data from the database
+        self.cur.execute("""
+            SELECT o.OrderID, o.order_date, o.delivery_date, o.paid_price, u.Ustatus
+            FROM Orders o
+            JOIN Updates u ON o.OrderID = u.OrderID
+            WHERE o.Delivering_ID = ?
+        """, (self.logged_in_user,))
+        assigned_orders_data = self.cur.fetchall()  # Get all results
     
+        # Check if there is data to display
+        if not assigned_orders_data:
+            sg.popup('No assigned orders found.')
+            return
+    
+        # Define the layout with the table
+        layout = [
+            [sg.Text('Assigned Orders')],
+            [sg.Table(values=assigned_orders_data, headings=['Order ID', 'Order Date', 'Delivery Date', 'Status'], key='-ORDERS-', enable_events=True)],
+            [sg.Button('Edit'), sg.Button('Close')]
+        ]
+        window = sg.Window('View Assigned Orders', layout)
+    
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Close':
+                break
+            elif event == 'Edit':
+                if values['-ORDERS-']:  # Check if any rows are selected
+                    try:
+                        selected_order = values['-ORDERS-'][0]  # Get the first (and only) selected row index
+                        # Continue processing the selected order
+                    except IndexError:
+                        sg.popup('No order selected. Please select an order to edit.')
+                else:
+                    sg.popup('No order selected. Please select an order to edit.')
+    
+        window.close()
+
+
+
+    
+    def edit_order_status(self, order_id):
+        # Fetch current status
+        self.cur.execute("SELECT Ustatus FROM updates WHERE OrderID=?", (order_id,))
+        current_status = self.cur.fetchone()[0]
+        new_status = not current_status  # Toggle status
+        # Update the status in the database
+        self.cur.execute("UPDATE updates SET Ustatus=? WHERE OrderID=?", (new_status, order_id))
+        self.conn.commit()
+        sg.popup('Status updated successfully!')
             
-        
     def run(self):
         while True:
             window = self.welcome_window()
@@ -386,7 +440,7 @@ class FlowerShopUI:
         if result:
             return result[0]  # Kullanıcı ID'sini döndür
         return None
-
+    
     def customer_login(self):
         while True:
             window = self.customer_login_window()
@@ -397,17 +451,20 @@ class FlowerShopUI:
             elif event == 'Login':
                 username = values['-USERNAME-']
                 password = values['-PASSWORD-']
-                user_id = self.customer_authentication(username, password)  # Kullanıcı ID'sini al
+                user_id = self.customer_authentication(username, password)
                 if user_id:
-                    # self.logged_in_user = user_id  # Kullanıcı ID'sini sakla
+                    self.logged_in_user = 'customer'
+                    self.user_id = user_id  # Kullanıcı ID'sini saklayın
                     self.customer_main_menu().read(close=True)
                     break
                 else:
                     sg.popup('Invalid username or password.')
             elif event == 'Logout':
                 self.logged_in_user = None
+                self.user_id = None  # Kullanıcı çıkış yaptığında ID'yi de sıfırlayın
                 break
-                
+    
+                    
                 
                 
     def customer_authentication(self, username, password):
@@ -440,23 +497,26 @@ class FlowerShopUI:
 
 
     def deliverer_authentication(self, username, password):
-        self.cur.execute("SELECT DID FROM User WHERE email = ? AND Upassword = ?", (username, password))
+        self.cur.execute("SELECT ID FROM User WHERE email = ? AND Upassword = ?", (username, password))
         result = self.cur.fetchone()
         if result:
             return result[0]  # Deliverer ID'sini döndür
         return None
 
     def view_orders(self):
-        # Sipariş bilgileri ile birlikte müşterinin adı, soyadı, telefon numarası ve sipariş durumunu çek
+        if self.user_id is None:
+            sg.popup('Please login first.')
+            return
+    
         self.cur.execute("""
-            SELECT o.OrderID, u.firstname, u.lastname, u.phone_number, o.order_date, o.delivery_date, 
+            SELECT o.OrderID, u.firstname, u.lastname, u.phone_number, o.order_date, o.delivery_date,
                    o.paid_price, o.gift_note, c.Caddress, uo.Ustatus
             FROM Orders o
             JOIN Customer c ON o.Placing_ID = c.CID
             JOIN User u ON c.CID = u.ID
             LEFT JOIN Updates uo ON o.OrderID = uo.OrderID
             WHERE o.Placing_ID = ?
-        """, (self.logged_in_user,))
+        """, (self.user_id,))
         orders = self.cur.fetchall()
         if not orders:
             sg.popup('No orders found.')
@@ -481,33 +541,69 @@ class FlowerShopUI:
         event, values = window.read()
         window.close()
     
-
-
-
-
-    
     def view_orders_window(self):
         # Siparişleri veritabanından alın ve uygun şekilde göster
-        self.cur.execute("SELECT * FROM Orders")
+        self.cur.execute("""
+            SELECT o.OrderID, u.ID, o.order_date, o.Containing_ID, uo.Ustatus
+            FROM Orders o
+            JOIN Customer c ON o.Placing_ID = c.CID
+            JOIN User u ON c.CID = u.ID
+            LEFT JOIN Updates uo ON o.OrderID = uo.OrderID
+        """)
         orders_data = self.cur.fetchall()
+    
+        # Ustatus değerlerini "Completed" veya "Incomplete" olarak güncelle
+        formatted_orders = []
+        for order in orders_data:
+            status = "Completed" if order[4] else "Incomplete"  # Ustatus değerini doğrudan kullan
+            formatted_order = order[:4] + (status,)
+            formatted_orders.append(formatted_order)
     
         # Siparişleri göstermek için bir pencere oluştur
         layout = [
             [sg.Text('Orders')],
-            [sg.Table(values=orders_data, headings=['Order ID', 'Customer ID', 'Date', 'Status'],
-                      display_row_numbers=False, auto_size_columns=True, justification='left')],
-            [sg.Button('Close')]
+            [sg.Table(values=formatted_orders, headings=['Order ID', 'Customer ID', 'Date', 'FID', 'Status'],
+                      display_row_numbers=False, auto_size_columns=True, justification='left', enable_events=True, key='-ORDERS-')],
+            [sg.Button('Assign Order'), sg.Button('Close')]
         ]
         window = sg.Window('View Orders', layout)
-        event, values = window.read()
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Close':
+                break
+            elif event == 'Assign Order':
+                if values['-ORDERS-']:  # Ensure a row is selected
+                    selected_order_index = values['-ORDERS-'][0]
+                    self.current_order_id = formatted_orders[selected_order_index][0]  # Assuming OrderID is at index 0
+                    selected_fid = formatted_orders[selected_order_index][3]  # Assuming FID is at index 3
+                    self.assign_orders(selected_fid)
+
+        window.close()
+
+    
+    def assign_orders(self, selected_fid):
+        filtered_pairs = [(did, fid) for did, fid in self.prepared_arrangements if fid == selected_fid]
+        layout = [
+            [sg.Text('Assign Orders to Deliverer')],
+            [sg.Table(values=filtered_pairs, headings=['DID', 'FID'], display_row_numbers=False, auto_size_columns=True, key='-TABLE-')],
+            [sg.Button('Assign'), sg.Button('Close')]
+        ]
+        window = sg.Window('Available Deliverers for Assignment', layout)
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Close':
+                break
+            elif event == 'Assign':
+                if values['-TABLE-']:  # Check if any row is selected
+                    selected_row_index = values['-TABLE-'][0]  # Get the first (and only) selection
+                    did = filtered_pairs[selected_row_index][0]  # DID is the first element in the tuple
+                    # Assuming you have a current_order_id attribute to store the order ID of the selected order
+                    self.cur.execute("UPDATE updates SET DID=?, Ustatus=? WHERE OrderID=?", (did, True, self.current_order_id))
+                    self.conn.commit()
+                    sg.popup('Order assigned successfully!')
         window.close()
 
 
-
-        
-        
-        
-#### END OF FUNCTIONAL REG 1
 
     def define_discounts_window(self):
         layout = [
@@ -635,35 +731,54 @@ class FlowerShopUI:
 
         
     def view_discounts_window(self):
-        self.cur.execute("SELECT discount_code, Entering_ID, discount_perc, Sdate, Edate FROM Discount")
-        data = self.cur.fetchall()
-
-        layout = [
-            [sg.Text('Discounts')],
-            [sg.Table(values=data, headings=["Code", "Enter ID", "Discount Percentage", "Start Date", "End Date"], auto_size_columns=True, display_row_numbers=False, justification='center', key='-DISCOUNTS-')],
-            [sg.Button('Select Discount'), sg.Button('Close')]
-        ]
-        window = sg.Window('View Discounts', layout)
+        self.cur.execute("SELECT discount_code, discount_perc FROM Discount")
+        discounts = self.cur.fetchall()
+        if self.logged_in_user == "customer":
+    
+            layout = [
+                [sg.Text('Available Discounts')],
+                [sg.Table(values=discounts, headings=['Code', 'Percentage'], key='-TABLE-', enable_events=True)],
+                [sg.Button('Apply Discount'), sg.Button('Cancel')]
+            ]
+        else:
+            layout = [
+                [sg.Text('Available Discounts')],
+                [sg.Table(values=discounts, headings=['Code', 'Percentage'], key='-TABLE-', enable_events=True)],
+                [sg.Button('Cancel')]
+            ]
+    
+        window = sg.Window('Select Discount', layout, modal=True)  # Modal ekleyerek arka planın etkileşime kapatılması
         while True:
             event, values = window.read()
-            if event == sg.WIN_CLOSED or event == 'Close':
+            if event == sg.WIN_CLOSED or event == 'Cancel':
                 break
-            elif event == 'Select Discount':
-                selected_row = values['-DISCOUNTS-'][0]
-                selected_discount = data[selected_row][2]  # Seçilen satırdaki "discount_perc" sütununu al
-                if selected_discount:
-                    self.selected_discount = selected_discount  # Seçilen indirim yüzdesini kaydet
-                    confirmation_layout = [
-                        [sg.Text(f'You selected discount percentage: {self.selected_discount}%. Do you want to apply this discount?')],
-                        [sg.Button('Yes'), sg.Button('No')]
-                    ]
-                    confirmation_window = sg.Window('Confirm Discount Selection', confirmation_layout)
-                    confirmation_event, _ = confirmation_window.read()
-                    confirmation_window.close()
-                    if confirmation_event == 'Yes':
-                        self.apply_discount_to_cart(self.selected_discount)
-                    self.selected_discount = None  # Seçilen indirimi sıfırla
+            elif event == 'Apply Discount':
+                if values['-TABLE-']:  # Seçim yapılmışsa
+                    selected_index = values['-TABLE-'][0]
+                    discount_code = discounts[selected_index][0]
+                    discount_percentage = discounts[selected_index][1]
+    
+                    # Indirimi doğrulayın ve uygulayın
+                    if self.check_discount_eligibility(discount_code):
+                        self.apply_discount_to_cart(discount_percentage)
+                        self.selected_discount = discount_code  # Seçilen indirimi sakla
+                        sg.popup('Discount applied successfully!')
+                        break
+                    else:
+                        sg.popup('This discount has already been used.')
         window.close()
+
+    
+    def apply_discount_to_cart(self, discount_percentage):
+        for i, (arrangement_id, original_price, _, gift_note) in enumerate(self.cart):
+            discounted_price = original_price * (1 - discount_percentage / 100)
+            self.cart[i] = (arrangement_id, original_price, discounted_price, gift_note)
+        sg.popup('Discount applied to cart!')
+
+    
+    def check_discount_eligibility(self, discount_code):
+        self.cur.execute("SELECT * FROM enters WHERE CID = ? AND discount_code = ?", (self.user_id, discount_code))
+        return not self.cur.fetchone()
 
 
     
@@ -703,20 +818,6 @@ class FlowerShopUI:
             self.create_order(discounted_price)  # Seçilen indirim kodunu parametre olarak geçirin
 
 
-    
-    
-    def apply_discount_to_cart(self, discount_percentage):
-        for i, (arrangement_id, original_price, final_price, gift_note) in enumerate(self.cart):
-            try:
-                original_price = float(original_price)
-                discounted_price = original_price * (1 - discount_percentage / 100)
-                # cart listesini güncelle
-                self.cart[i] = (arrangement_id, original_price, discounted_price, gift_note)
-            except ValueError:
-                print("Error: Price must be a number. Received:", original_price)
-                continue
-
-
     def update_cart(self):
         for i, (arrangement_id, price) in enumerate(self.cart):
             discounted_price = price
@@ -752,26 +853,14 @@ class FlowerShopUI:
             sg.popup('Please select a discount first.')
             return
     
-        # CustomerDiscount tablosunu oluştur
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS CustomerDiscount (
-                CustomerID INT NOT NULL,
-                DiscountCode CHAR(20) NOT NULL,
-                PRIMARY KEY (CustomerID, DiscountCode),
-                FOREIGN KEY (CustomerID) REFERENCES Customer(CID),
-                FOREIGN KEY (DiscountCode) REFERENCES Discount(discount_code)
-            );
-        """)
-        self.conn.commit()
-    
         # Müşteri tarafından daha önce kullanılan indirimleri kontrol et
-        self.cur.execute("SELECT * FROM CustomerDiscount WHERE CustomerID = ? AND DiscountCode = ?", (self.logged_in_user, self.selected_discount))
+        self.cur.execute("SELECT * FROM enters WHERE CID = ? AND discount_code = ?", (self.logged_in_user, self.selected_discount))
         if self.cur.fetchone():
             sg.popup('This discount has already been used.')
             return  # İndirim zaten kullanılmış
     
         # İndirim kullanılmamışsa, indirimi uygula ve kaydet
-        self.cur.execute("INSERT INTO CustomerDiscount (CustomerID, DiscountCode) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
+        self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
         self.conn.commit()
     
         # Sepeti güncelle
@@ -782,34 +871,30 @@ class FlowerShopUI:
         sg.popup('Discount applied successfully!')
 
 
-
-
     def place_order(self):
-        print("Placing ID:", self.logged_in_user)  # Kullanıcı ID'sini kontrol et
-        placing_id = sg.popup_get_text('Please enter your Customer ID:')
-        if not placing_id:
-            sg.popup('No Customer ID provided. Order canceled.')
+        if not self.user_id:
+            sg.popup("Lütfen sipariş vermek için önce giriş yapın.")
             return
     
         order_date = datetime.now().strftime('%Y-%m-%d')
-        default_delivering_id = 11  # Default value, 
-        # need to check deliverers and assign randomly between free deliverers or deliverers with less deliveries
+        default_delivering_id = 0  # Teslimatçı henüz atanmadığı için varsayılan değer
     
         for arrangement_id, _, final_price, gift_note in self.cart:
             order_id = self.generate_order_id()
             self.cur.execute(
                 "INSERT INTO Orders (OrderID, Placing_ID, Delivering_ID, Containing_ID, order_date, delivery_date, paid_price, gift_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (order_id, placing_id, default_delivering_id, arrangement_id, order_date, None, final_price, gift_note))
-            self.conn.commit()
-
-            # Sipariş eklendikten sonra Updates tablosunu güncelle
-            self.cur.execute(
-                "INSERT INTO Updates (OrderID, DID, Ustatus) VALUES (?, ?, ?)",
-                (order_id, default_delivering_id, False))  # Ustatus olarak False (0) ve DID olarak None girilir
+                (order_id, self.user_id, default_delivering_id, arrangement_id, order_date, None, final_price, gift_note))
             self.conn.commit()
     
         sg.popup('Order placed successfully!')
         self.cart.clear()  # Sipariş verildikten sonra sepeti temizle
+        self.selected_discount = None  # Seçilen indirimi sıfırla
+
+
+    def check_discount_usage(self, discount_code, user_id):
+        """Belirli bir kullanıcı için belirli bir indirim kodunun daha önce kullanılıp kullanılmadığını kontrol eder."""
+        self.cur.execute("SELECT * FROM enters WHERE CID = ? AND discount_code = ?", (user_id, discount_code))
+        return self.cur.fetchone() is not None
 
 
 
@@ -887,6 +972,7 @@ class FlowerShopUI:
         self.conn.commit()
         sg.popup('Delivery ID updated successfully!')
 
+# END OF FUNCTIONAL REQ 2
 
 
 
