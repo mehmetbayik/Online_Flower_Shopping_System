@@ -662,7 +662,7 @@ class FlowerShopUI:
         window.close()
 
     
-    def view_cart(self):
+    def view_cart(self, discount_applied=True, discount_code=None):
         cart_display = [(arrangement_id, original_price, final_price, gift_note) for arrangement_id, original_price, final_price, gift_note in self.cart]
         layout = [
             [sg.Text('Cart')],
@@ -676,7 +676,10 @@ class FlowerShopUI:
                 window.close()
                 break
             elif event == 'Order':
-                self.place_order()
+                if discount_applied:
+                    self.place_order(discount_code=discount_code)
+                else:
+                    self.place_order(discount_code=None)
         window.close()
 
 
@@ -790,6 +793,7 @@ class FlowerShopUI:
                         break
                     else:
                         sg.popup('This discount has already been used.')
+                        break
         window.close()
 
     
@@ -797,6 +801,8 @@ class FlowerShopUI:
         for i, (arrangement_id, original_price, _, gift_note) in enumerate(self.cart):
             discounted_price = original_price * (1 - discount_percentage / 100)
             self.cart[i] = (arrangement_id, original_price, discounted_price, gift_note)
+        #self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, discount_percentage))
+        #self.conn.commit()
         sg.popup('Discount applied to cart!')
 
     
@@ -884,18 +890,18 @@ class FlowerShopUI:
             return  # İndirim zaten kullanılmış
     
         # İndirim kullanılmamışsa, indirimi uygula ve kaydet
-        self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
-        self.conn.commit()
+        #self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
+        #self.conn.commit()
     
         # Sepeti güncelle
         self.update_cart()
     
         # Sepeti yeniden görüntüle
-        self.view_cart()
+        self.view_cart(discount_applied=True, discount_code=self.selected_discount)
         sg.popup('Discount applied successfully!')
 
 
-    def place_order(self):
+    def place_order(self, discount_code=None):
         if not self.user_id:
             sg.popup("Lütfen sipariş vermek için önce giriş yapın.")
             return
@@ -909,7 +915,12 @@ class FlowerShopUI:
                 "INSERT INTO Orders (OrderID, Placing_ID, Delivering_ID, Containing_ID, order_date, delivery_date, paid_price, gift_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (order_id, self.user_id, default_delivering_id, arrangement_id, order_date, None, final_price, gift_note))
             self.conn.commit()
-    
+            
+        #self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
+        #self.conn.commit()
+        if discount_code:
+            self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.user_id, discount_code))
+            self.conn.commit()
         sg.popup('Order placed successfully!')
         self.cart.clear()  # Sipariş verildikten sonra sepeti temizle
         self.selected_discount = None  # Seçilen indirimi sıfırla
