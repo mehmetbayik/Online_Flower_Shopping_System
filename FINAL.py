@@ -6,7 +6,7 @@ import PySimpleGUI as sg
 
 class FlowerShopUI:
     def __init__(self):
-        self.conn = sqlite3.connect("project-stage2.db")
+        self.conn = sqlite3.connect("projectfinal3.db")
         self.cur = self.conn.cursor()
         self.logged_in_user = None
         self.user_id = None
@@ -199,7 +199,7 @@ class FlowerShopUI:
                      fid = arrangement[0]  # assuming FID is the first element in the tuple
                      self.prepared_arrangements.append((self.logged_in_user, fid))
                 sg.popup('Arrangements prepared and visible to admins')
-                break
+
             else:
                 sg.popup('No arrangements selected.')
 
@@ -446,7 +446,8 @@ class FlowerShopUI:
             if self.cur.fetchone():
                 return admin_id
         return None
-    
+
+        
     def customer_login(self):
         while True:
             window = self.customer_login_window()
@@ -513,7 +514,7 @@ class FlowerShopUI:
         return None
     
     
-        def view_orders(self):
+    def view_orders(self):
             if self.user_id is None:
                 sg.popup('Please login first.')
                 return
@@ -634,23 +635,29 @@ class FlowerShopUI:
                 window.close()
                 break
             elif event == 'Save':
-                discount_code = values['-DISCOUNT_CODE-']
-                start_date = values['-START_DATE-']
-                end_date = values['-END_DATE-']
-                discount_percentage = values['-DISCOUNT_PERCENTAGE-']
-                
-                # İndirim kodunun benzersiz olup olmadığını kontrol et
-                self.cur.execute("SELECT COUNT(*) FROM Discount WHERE discount_code = ?", (discount_code,))
-                count = self.cur.fetchone()[0]
-                if count > 0:
-                    sg.popup("Discount code already exists. Please choose a different code.")
-                else:
-                    # Yeni indirimi veritabanına ekle
-                    Entering_ID = self.logged_in_user
-                    self.cur.execute("INSERT INTO Discount (discount_code, Entering_ID, Sdate, Edate, discount_perc) VALUES (?, ?, ?, ?, ?)",
-                                     (discount_code, Entering_ID, start_date, end_date, discount_percentage))
-                    self.conn.commit()
-                    sg.popup('Discount defined successfully!')
+                try:
+                    
+                    discount_code = values['-DISCOUNT_CODE-']
+                    start_date = values['-START_DATE-']
+                    end_date = values['-END_DATE-']
+                    discount_percentage = values['-DISCOUNT_PERCENTAGE-']
+                    discount_code_int = int(discount_percentage)
+                    
+                    # İndirim kodunun benzersiz olup olmadığını kontrol et
+                    self.cur.execute("SELECT COUNT(*) FROM Discount WHERE discount_code = ?", (discount_code,))
+                    count = self.cur.fetchone()[0]
+                    if count > 0:
+                        sg.popup("Discount code already exists. Please choose a different code.")
+                    else:
+                        # Yeni indirimi veritabanına ekle
+                        Entering_ID = self.logged_in_user
+                        self.cur.execute("INSERT INTO Discount (discount_code, Entering_ID, Sdate, Edate, discount_perc) VALUES (?, ?, ?, ?, ?)",
+                                        (discount_code, Entering_ID, start_date, end_date, discount_percentage))
+                        self.conn.commit()
+                        sg.popup('Discount defined successfully!')
+                        break
+                except:
+                    sg.popup('Invalid value/s! (Discount percentage should be integer)')
                     break
         window.close()
 

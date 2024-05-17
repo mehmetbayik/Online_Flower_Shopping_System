@@ -83,7 +83,7 @@ CREATE TABLE enters(
 );
 
 CREATE TABLE updates(
-   OrderID CHAR(10) NOT NULL UNIQUE,
+   OrderID CHAR(10) NOT NULL, -- not unique last change
    DID CHAR(10) NOT NULL,
    Ustatus BOOLEAN,
    PRIMARY KEY (OrderID, DID),
