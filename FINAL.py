@@ -6,7 +6,7 @@ import PySimpleGUI as sg
 
 class FlowerShopUI:
     def __init__(self):
-        self.conn = sqlite3.connect("projectfinal3.db")
+        self.conn = sqlite3.connect("projectfinal4.db")
         self.cur = self.conn.cursor()
         self.logged_in_user = None
         self.user_id = None
@@ -662,7 +662,7 @@ class FlowerShopUI:
         window.close()
 
     
-    def view_cart(self, discount_applied=True, discount_code=None):
+    def view_cart(self, discount_applied=False, discount_code=None):
         cart_display = [(arrangement_id, original_price, final_price, gift_note) for arrangement_id, original_price, final_price, gift_note in self.cart]
         layout = [
             [sg.Text('Cart')],
@@ -918,8 +918,8 @@ class FlowerShopUI:
             
         #self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
         #self.conn.commit()
-        if discount_code:
-            self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.user_id, discount_code))
+        if discount_code is not None:
+            self.cur.execute("INSERT INTO enters (CID, discount_code) VALUES (?, ?)", (self.logged_in_user, self.selected_discount))
             self.conn.commit()
         sg.popup('Order placed successfully!')
         self.cart.clear()  # Sipariş verildikten sonra sepeti temizle
