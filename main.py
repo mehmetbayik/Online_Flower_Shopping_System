@@ -6,7 +6,7 @@ import PySimpleGUI as sg
 
 class FlowerShopUI:
     def __init__(self):
-        self.conn = sqlite3.connect("projectfinal4.db")
+        self.conn = sqlite3.connect("database.db")
         self.cur = self.conn.cursor()
         self.logged_in_user = None
         self.user_id = None
